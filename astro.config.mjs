@@ -1,6 +1,7 @@
 import { defineConfig } from 'astro/config';
 
 export default defineConfig({
-  site: 'https://360degre.es',
+  site: 'https://benediktweishaupt.github.io',
+  base: '/telegram-microblogging-bot',
   output: 'static',
 });
