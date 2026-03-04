@@ -1,0 +1,105 @@
+---
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+
+interface Props {
+  date: Date;
+  author: string;
+  location?: { lat: number; lng: number; name: string };
+  images: Array<{ src: ImageMetadata; width: number; height: number }>;
+  body: string;
+}
+
+const { date, author, location, images, body } = Astro.props;
+
+const formattedDate = date.toLocaleDateString('de-DE', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+});
+---
+
+<article class="post">
+  <div class="post-meta">
+    <span class="post-date">{formattedDate} &middot; {author}</span>
+    {location && <span class="post-location">{location.name}</span>}
+  </div>
+
+  {
+    images.length > 0 && (
+      <div
+        class:list={[
+          'post-images',
+          { 'post-images--grid': images.length > 1 },
+        ]}
+      >
+        {images.map((img, i) => (
+          <Image
+            src={img.src}
+            alt=""
+            widths={[320, 640, 960]}
+            sizes="(max-width: 640px) 100vw, 640px"
+            loading="lazy"
+            class:list={[
+              {
+                'span-full':
+                  images.length > 1 && images.length % 2 !== 0 && i === 0,
+              },
+            ]}
+          />
+        ))}
+      </div>
+    )
+  }
+
+  {body && <div class="post-body" set:html={body} />}
+</article>
+
+<style>
+  .post {
+    padding: 1.5rem 0;
+    border-bottom: 1px solid #e5e5e5;
+  }
+  .post-meta {
+    margin-bottom: 0.75rem;
+  }
+  .post-date {
+    font-size: 0.875rem;
+    color: #666;
+  }
+  .post-location {
+    display: block;
+    font-size: 0.875rem;
+    color: #666;
+    margin-top: 0.25rem;
+  }
+  .post-images {
+    margin-bottom: 0.75rem;
+  }
+  .post-images img {
+    width: 100%;
+    height: auto;
+    border-radius: 4px;
+  }
+  .post-images--grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  .post-body {
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+  .post-body :global(p) {
+    margin-bottom: 0.5em;
+  }
+
+  @media (min-width: 640px) {
+    .post-images--grid {
+      grid-template-columns: 1fr 1fr;
+    }
+    .span-full {
+      grid-column: 1 / -1;
+    }
+  }
+</style>

@@ -1,0 +1,43 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Post from '../components/Post.astro';
+import { getCollection, render } from 'astro:content';
+
+const posts = await getCollection('posts');
+posts.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+---
+
+<BaseLayout>
+  <div class="feed">
+    <h1 class="site-title">360&deg;</h1>
+    {
+      posts.map(async (post) => {
+        const { Content } = await render(post);
+        return (
+          <Post
+            date={post.data.date}
+            author={post.data.author}
+            location={post.data.location}
+            images={post.data.images}
+            body={post.body ?? ''}
+          />
+        );
+      })
+    }
+  </div>
+</BaseLayout>
+
+<style>
+  .feed {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+  }
+  .site-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e5e5e5;
+  }
+</style>
