@@ -47,6 +47,7 @@ export interface PostData {
   date: Date;
   author: string;
   text: string;
+  tags: string[];
   images: Array<{
     filename: string;
     data: ArrayBuffer;

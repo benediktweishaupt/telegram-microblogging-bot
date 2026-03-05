@@ -6,8 +6,15 @@ import {
   resolveShortUrl,
 } from './geocoding';
 import { pushPostToGitHub } from './github';
-import { getPostSlug, getImageFilename, generateMarkdown } from './post';
+import { getPostSlug, getImageFilename, generateMarkdown, extractHashtags, extractDate } from './post';
 import { handleMediaGroup } from './media-group';
+import {
+  storePendingLocation,
+  getPendingLocation,
+  storeLastPost,
+  getLastPost,
+  updatePostLocation,
+} from './location';
 
 function getAuthor(userId: number, env: Env): string | null {
   if (String(userId) === env.BENE_TELEGRAM_ID) return 'Bene';
@@ -74,7 +81,10 @@ async function handleSinglePhoto(
   env: Env,
 ): Promise<void> {
   try {
-    const date = new Date(message.date * 1000);
+    const rawCaption = message.caption || '';
+    const { cleanText: captionAfterDate, date: customDate } = extractDate(rawCaption);
+    const { cleanText: caption, tags } = extractHashtags(captionAfterDate);
+    const date = customDate || new Date(message.date * 1000);
     const slug = getPostSlug(date);
     const largest = getLargestPhoto(message.photo!);
 
@@ -84,13 +94,21 @@ async function handleSinglePhoto(
     );
     const filename = getImageFilename(date, 0);
 
+    // Check for pending location
+    const pending = await getPendingLocation(env, message.chat.id);
+    const location = pending
+      ? { lat: pending.lat, lng: pending.lng, name: pending.name }
+      : undefined;
+
     const post: PostData = {
       date,
       author,
-      text: message.caption || '',
+      text: caption,
+      tags,
       images: [
         { filename, data: imageData, width: largest.width, height: largest.height },
       ],
+      location,
     };
 
     const markdown = generateMarkdown(post);
@@ -103,7 +121,11 @@ async function handleSinglePhoto(
       env,
     );
 
-    await sendMessage(message.chat.id, 'Posted!', env.TELEGRAM_BOT_TOKEN);
+    // Store as last post for location attachment
+    await storeLastPost(env, message.chat.id, slug);
+
+    const response = location ? `Posted! 📍 ${location.name}` : 'Posted!';
+    await sendMessage(message.chat.id, response, env.TELEGRAM_BOT_TOKEN);
   } catch (err) {
     console.error('Single photo error:', err);
     await sendMessage(
@@ -122,35 +144,33 @@ async function handleLocation(
   try {
     const { latitude: lat, longitude: lng } = message.location!;
     const locationName = await reverseGeocode(lat, lng);
-    const date = new Date(message.date * 1000);
-    const slug = getPostSlug(date);
-
-    const post: PostData = {
-      date,
-      author,
-      text: '',
-      images: [],
-      location: {
-        lat,
-        lng,
-        name: locationName || `${lat.toFixed(4)}, ${lng.toFixed(4)}`,
-      },
+    const location = {
+      lat,
+      lng,
+      name: locationName || `${lat.toFixed(4)}, ${lng.toFixed(4)}`,
     };
 
-    const markdown = generateMarkdown(post);
-
-    await pushPostToGitHub(
-      `src/content/posts/${slug}.md`,
-      markdown,
-      [],
-      `post: ${slug} (${author})`,
-      env,
-    );
-
-    const response = locationName
-      ? `Posted! 📍 ${locationName}`
-      : 'Posted!';
-    await sendMessage(message.chat.id, response, env.TELEGRAM_BOT_TOKEN);
+    // Check if there's a recent post to attach to
+    const lastPost = await getLastPost(env, message.chat.id);
+    if (lastPost) {
+      await updatePostLocation(env, lastPost.slug, location);
+      await sendMessage(
+        message.chat.id,
+        `📍 ${location.name} — zum letzten Post`,
+        env.TELEGRAM_BOT_TOKEN,
+      );
+    } else {
+      // Store for the next post to pick up
+      await storePendingLocation(env, message.chat.id, {
+        ...location,
+        timestamp: Date.now(),
+      });
+      await sendMessage(
+        message.chat.id,
+        `📍 ${location.name} — wird dem nächsten Post zugeordnet`,
+        env.TELEGRAM_BOT_TOKEN,
+      );
+    }
   } catch (err) {
     console.error('Location error:', err);
     await sendMessage(
@@ -167,9 +187,16 @@ async function handleText(
   env: Env,
 ): Promise<void> {
   try {
-    const text = message.text!;
-    const date = new Date(message.date * 1000);
+    let text = message.text!;
+
+    // Extract backdating directive
+    const { cleanText: textAfterDate, date: customDate } = extractDate(text);
+    text = textAfterDate;
+    const date = customDate || new Date(message.date * 1000);
     const slug = getPostSlug(date);
+
+    // Extract hashtags
+    const { cleanText, tags } = extractHashtags(text);
 
     // Check for Google Maps link
     let location: PostData['location'];
@@ -185,10 +212,19 @@ async function handleText(
       };
     }
 
+    // Check for pending location
+    if (!location) {
+      const pending = await getPendingLocation(env, message.chat.id);
+      if (pending) {
+        location = { lat: pending.lat, lng: pending.lng, name: pending.name };
+      }
+    }
+
     const post: PostData = {
       date,
       author,
-      text,
+      text: cleanText,
+      tags,
       images: [],
       location,
     };
@@ -202,6 +238,9 @@ async function handleText(
       `post: ${slug} (${author})`,
       env,
     );
+
+    // Store as last post for location attachment
+    await storeLastPost(env, message.chat.id, slug);
 
     const response = location ? `Posted! 📍 ${location.name}` : 'Posted!';
     await sendMessage(message.chat.id, response, env.TELEGRAM_BOT_TOKEN);

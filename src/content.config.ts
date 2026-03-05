@@ -14,6 +14,7 @@ const posts = defineCollection({
           name: z.string(),
         })
         .optional(),
+      tags: z.array(z.string()).optional().default([]),
       images: z
         .array(
           z.object({

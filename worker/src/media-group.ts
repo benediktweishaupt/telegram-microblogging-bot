@@ -1,7 +1,8 @@
 import type { Env, TelegramMessage, MediaGroupEntry, PostData } from './types';
 import { downloadPhoto, getLargestPhoto, sendMessage } from './telegram';
-import { getPostSlug, getImageFilename, generateMarkdown } from './post';
+import { getPostSlug, getImageFilename, generateMarkdown, extractHashtags, extractDate } from './post';
 import { pushPostToGitHub } from './github';
+import { getPendingLocation, storeLastPost } from './location';
 
 export async function handleMediaGroup(
   message: TelegramMessage,
@@ -79,9 +80,11 @@ async function processMediaGroup(
   // Sort by message_id to maintain order
   entries.sort((a, b) => a.message_id - b.message_id);
 
-  const caption = entries.find((e) => e.caption !== null)?.caption || '';
+  const rawCaption = entries.find((e) => e.caption !== null)?.caption || '';
+  const { cleanText: captionAfterDate, date: customDate } = extractDate(rawCaption);
+  const { cleanText: caption, tags } = extractHashtags(captionAfterDate);
   const firstEntry = entries[0];
-  const date = new Date(firstEntry.date * 1000);
+  const date = customDate || new Date(firstEntry.date * 1000);
   const author = getAuthor(firstEntry.from_id, env);
   const slug = getPostSlug(date);
 
@@ -98,11 +101,19 @@ async function processMediaGroup(
     imageFiles.push({ path: `src/assets/posts/${filename}`, data });
   }
 
+  // Check for pending location
+  const pending = await getPendingLocation(env, chatId);
+  const location = pending
+    ? { lat: pending.lat, lng: pending.lng, name: pending.name }
+    : undefined;
+
   const post: PostData = {
     date,
     author,
     text: caption,
+    tags,
     images,
+    location,
   };
 
   const markdown = generateMarkdown(post);
@@ -116,5 +127,9 @@ async function processMediaGroup(
     env,
   );
 
-  await sendMessage(chatId, 'Posted!', env.TELEGRAM_BOT_TOKEN);
+  // Store as last post for location attachment
+  await storeLastPost(env, chatId, slug);
+
+  const response = location ? `Posted! 📍 ${location.name}` : 'Posted!';
+  await sendMessage(chatId, response, env.TELEGRAM_BOT_TOKEN);
 }

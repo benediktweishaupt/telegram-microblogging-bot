@@ -24,6 +24,28 @@ export function getImageFilename(
   return `${slug}-${num}.jpg`;
 }
 
+export function extractHashtags(text: string): { cleanText: string; tags: string[] } {
+  const tags: string[] = [];
+  const cleanText = text.replace(/#([\w\u00e4\u00f6\u00fc\u00c4\u00d6\u00dc\u00df]+)/g, (_, tag) => {
+    tags.push(tag.toLowerCase());
+    return '';
+  }).replace(/\s{2,}/g, ' ').trim();
+  return { cleanText, tags: [...new Set(tags)] };
+}
+
+export function extractDate(text: string): { cleanText: string; date: Date | null } {
+  const match = text.match(/^@(\d{4}-\d{2}-\d{2})(?:\s+(\d{2}:\d{2}))?\s*/);
+  if (!match) return { cleanText: text, date: null };
+
+  const [fullMatch, dateStr, timeStr] = match;
+  const time = timeStr || '12:00';
+  const date = new Date(`${dateStr}T${time}:00.000Z`);
+
+  if (isNaN(date.getTime())) return { cleanText: text, date: null };
+
+  return { cleanText: text.slice(fullMatch.length), date };
+}
+
 function escapeYaml(str: string): string {
   if (
     str.includes(':') ||
@@ -50,6 +72,12 @@ export function generateMarkdown(post: PostData): string {
     lines.push(`  lat: ${post.location.lat}`);
     lines.push(`  lng: ${post.location.lng}`);
     lines.push(`  name: ${escapeYaml(post.location.name)}`);
+  }
+
+  if (post.tags.length > 0) {
+    lines.push(`tags: [${post.tags.map((t) => escapeYaml(t)).join(', ')}]`);
+  } else {
+    lines.push('tags: []');
   }
 
   if (post.images.length > 0) {

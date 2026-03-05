@@ -18,6 +18,7 @@ posts.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
             date={post.data.date}
             author={post.data.author}
             location={post.data.location}
+            tags={post.data.tags}
             images={post.data.images}
             body={post.body ?? ''}
           />
