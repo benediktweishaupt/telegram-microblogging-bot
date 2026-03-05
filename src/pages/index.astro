@@ -8,38 +8,27 @@ posts.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
 ---
 
 <BaseLayout>
-  <div class="feed">
-    <h1 class="site-title">360&deg;</h1>
-    {
-      posts.map(async (post) => {
-        const { Content } = await render(post);
-        return (
-          <Post
-            date={post.data.date}
-            author={post.data.author}
-            location={post.data.location}
-            tags={post.data.tags}
-            images={post.data.images}
-            body={post.body ?? ''}
-          />
-        );
-      })
-    }
+  <div class="md:flex md:justify-center md:gap-12">
+    <header class="relative top-0 z-10 bg-white p-4 md:fixed md:bg-transparent md:p-4 md:left-0">
+      <h1 class="text-base font-semibold text-neutral-800">360&deg;</h1>
+    </header>
+
+    <div class="max-w-[478px] mx-auto md:mx-0">
+      {
+        posts.map(async (post) => {
+          const { Content } = await render(post);
+          return (
+            <Post
+              date={post.data.date}
+              author={post.data.author}
+              location={post.data.location}
+              tags={post.data.tags}
+              images={post.data.images}
+              body={post.body ?? ''}
+            />
+          );
+        })
+      }
+    </div>
   </div>
 </BaseLayout>
-
-<style>
-  .feed {
-    max-width: 470px;
-    margin: 0 auto;
-    padding: 1rem;
-  }
-  .site-title {
-    font-size: 1rem;
-    font-weight: 600;
-    margin-bottom: 0.75rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid #efefef;
-    color: #262626;
-  }
-</style>

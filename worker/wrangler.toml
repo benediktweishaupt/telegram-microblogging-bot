@@ -4,8 +4,7 @@ compatibility_date = "2026-03-01"
 
 [[kv_namespaces]]
 binding = "MEDIA_GROUPS"
-id = "<KV_NAMESPACE_ID>"
-preview_id = "<PREVIEW_ID>"
+id = "1bf500c967b84fedafbd07bf6463e96c"
 
 [vars]
 GITHUB_REPO = "benediktweishaupt/telegram-microblogging-bot"
