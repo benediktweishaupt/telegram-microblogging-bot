@@ -5,3 +5,4 @@ dist/
 worker/node_modules/
 worker/.dev.vars
 .claude/
+src/assets/.DS_Store

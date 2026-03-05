@@ -3,8 +3,9 @@ import { defineConfig } from 'astro/config';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
-  site: 'https://benediktweishaupt.github.io',
-  base: '/elternzeitreise-blog',
+  // TODO: Set these for your GitHub Pages deployment
+  // site: 'https://YOUR_USERNAME.github.io',
+  // base: '/YOUR_REPO_NAME',
   output: 'static',
 
   vite: {

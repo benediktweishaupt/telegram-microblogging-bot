@@ -4,10 +4,10 @@ compatibility_date = "2026-03-01"
 
 [[kv_namespaces]]
 binding = "MEDIA_GROUPS"
-id = "1bf500c967b84fedafbd07bf6463e96c"
+id = "" # Create via: npx wrangler kv namespace create MEDIA_GROUPS
 
 [vars]
-GITHUB_REPO = "benediktweishaupt/elternzeitreise-blog"
+GITHUB_REPO = "" # your-username/your-repo-name
 
 # Secrets (set via `wrangler secret put`):
 # TELEGRAM_BOT_TOKEN
