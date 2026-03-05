@@ -7,7 +7,7 @@ binding = "MEDIA_GROUPS"
 id = "1bf500c967b84fedafbd07bf6463e96c"
 
 [vars]
-GITHUB_REPO = "benediktweishaupt/telegram-microblogging-bot"
+GITHUB_REPO = "benediktweishaupt/elternzeitreise-blog"
 
 # Secrets (set via `wrangler secret put`):
 # TELEGRAM_BOT_TOKEN

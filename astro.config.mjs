@@ -4,7 +4,7 @@ import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
   site: 'https://benediktweishaupt.github.io',
-  base: '/telegram-microblogging-bot',
+  base: '/elternzeitreise-blog',
   output: 'static',
 
   vite: {

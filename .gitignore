@@ -4,3 +4,4 @@ dist/
 .env
 worker/node_modules/
 worker/.dev.vars
+.claude/
